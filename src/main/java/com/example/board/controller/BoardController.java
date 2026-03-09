@@ -37,10 +37,6 @@ public class BoardController {
     // [1] 게시글 생성  POST /boards
     // ─────────────────────────────────────────
 
-    @GetMapping("/Hello")
-    public String hello() {
-        return "HEllO";
-    }
 
     /**
      * @PostMapping  : HTTP POST 요청을 이 메서드에 연결
@@ -51,7 +47,7 @@ public class BoardController {
      *   Body: { "title": "제목", "content": "내용" }
      *
      * 응답 예시:
-     *   200 OK
+     *   200 OK -> 201 created
      *   { "id": 1, "title": "제목", "content": "내용", "createdAt": "..." }
      */
     @PostMapping
@@ -71,7 +67,7 @@ public class BoardController {
     @GetMapping
     public ResponseEntity<List<BoardResponseDto>> findAll() {
         List<BoardResponseDto> response = boardService.findAll();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(201).body(response); // 201 Created
     }
 
     // ─────────────────────────────────────────
@@ -83,6 +79,7 @@ public class BoardController {
      *
      * 요청 예시:  GET /boards/1
      * 응답 예시:  { "id": 1, "title": "제목", "content": "내용", "createdAt": "..." }
+     * 없는 ID 요청 시 404 Not Found 응답 추가
      */
     @GetMapping("/{id}")
     public ResponseEntity<BoardResponseDto> findById(@PathVariable Long id) {
@@ -103,14 +100,20 @@ public class BoardController {
      *   200 OK
      *   { "id": 1, "title": "수정된 제목", ... }
      */
+
     @PutMapping("/{id}")
     public ResponseEntity<BoardResponseDto> update(
             @PathVariable Long id,
             @RequestBody BoardRequestDto requestDto) {
+        try {
+            BoardResponseDto response = boardService.update(id, requestDto);
+            return ResponseEntity.ok(response); // 200 OK
 
-        BoardResponseDto response = boardService.update(id, requestDto);
-        return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build(); // 404 Not Found
+        }
     }
+
 
     // ─────────────────────────────────────────
     // [5] 게시글 삭제  DELETE /boards/{id}
@@ -122,7 +125,12 @@ public class BoardController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boardService.delete(id);
-        return ResponseEntity.ok().build();
+        try {
+            boardService.delete(id);
+            return ResponseEntity.ok().build(); // 200 OK
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build(); // 404 Not Found
+        }
     }
 }
